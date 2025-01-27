@@ -1,0 +1,58 @@
+import pandas as pd
+import yahooquery as yq
+from yahooquery import Ticker
+import datetime
+import csv
+'''
+This code creates a trending_ticker.csv file of the trending tickers on yahoo finance and their Pre-market percent change
+Date,Buy,Sell
+7-17-24,AAPL MSFT,NVDA AMD
+'''
+# Get the list of trending tickers
+data = yq.get_trending()
+today = datetime.date.today()
+
+# Create empty lists
+tick_up = []
+pct_change_up = []
+tick_down = []
+pct_change_down = []
+tick_error = []
+
+# Looking for stocks with +/- percent target pre-market
+pct_target = 0.02
+
+# Iterate for every item in the trending ticker list
+for item in data['quotes']:
+    # Store symbol in format 'AAPL'
+    symbol = str(item['symbol'])
+    # Create ticker object for each symbol in trending stock data
+    ticker = Ticker(symbol)
+    # Store value of each ticker
+    values = ticker.price[symbol]
+    # Append symbol and pre market percent change to lists
+    try: 
+        # Append symbol and pre market percent change to lists
+        if values['preMarketChangePercent'] > pct_target:
+            tick_up.append(symbol)
+            pct_change_up.append(values['preMarketChangePercent'])
+
+        if values['preMarketChangePercent'] < -pct_target:
+            tick_down.append(symbol)
+            pct_change_down.append(values['preMarketChangePercent'])
+    except KeyError:
+        print(f"KeyError for ticker: {symbol}")
+        tick_error.append(symbol)
+        continue
+tick_up_str = ' '.join(tick_up)
+tick_down_str = ' '.join(tick_down)
+
+with open('trending_tickers.csv', 'w', newline='') as csvfile:
+    csvwriter = csv.writer(csvfile)
+    
+    #Write a row with the date and lists
+    csvwriter.writerow(['Date', 'Buy', 'Sell'])
+    csvwriter.writerow([today, tick_up_str, tick_down_str])
+    
+df = pd.read_csv('trending_tickers.csv')
+df.head()
